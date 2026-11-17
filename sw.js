@@ -1,4 +1,4 @@
-﻿const CACHE = 'clima-peba-v3';
+﻿const CACHE = 'clima-peba-v4';
 const ARQUIVOS = [
   './app_chuva.html',
   './index.html',

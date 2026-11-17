@@ -471,6 +471,105 @@ function aplicarAvatar(idx) {
 }
 
 // ============================================================
+//  ALERTAS DE EXTREMOS CLIMATICOS
+// ============================================================
+let alertasAtivos = false;     // usuario ligou/desligou os alertas
+let limiaresExtremos = null;  // extremos de cada mes na serie NASA POWER carregada
+
+// Para cada mes, calcula os extremos (max/min de temperatura e max de chuva)
+// da serie historica carregada.
+function calcularLimiaresExtremos() {
+  if (!dadosMensais) return null;
+  const acc = [];
+  for (let m = 0; m < 12; m++) acc.push({ tempMax: -Infinity, tempMin: Infinity, precMax: -Infinity, n: 0, anoMin: null, anoMax: null });
+  Object.keys(dadosMensais).forEach(function (ano) {
+    const d = dadosMensais[ano];
+    if (!d || !d.p || !d.t) return;
+    for (let m = 0; m < 12; m++) {
+      const t = d.t[m], p = d.p[m];
+      if (t == null || p == null) continue;
+      const a = acc[m];
+      a.tempMax = Math.max(a.tempMax, t);
+      a.tempMin = Math.min(a.tempMin, t);
+      a.precMax = Math.max(a.precMax, p);
+      a.n++;
+      const y = parseInt(ano, 10);
+      if (a.anoMin === null || y < a.anoMin) a.anoMin = y;
+      if (a.anoMax === null || y > a.anoMax) a.anoMax = y;
+    }
+  });
+  limiaresExtremos = acc;
+  return acc;
+}
+
+// Compara o tempo de agora com os extremos do mesmo mes na serie historica.
+// Só dispara quando os alertas estão ligados.
+function avaliarAlertaClimatico(j) {
+  if (!alertasAtivos || !j || !j.current) return;
+  if (!limiaresExtremos) calcularLimiaresExtremos();
+  if (!limiaresExtremos) return;
+
+  const mes = new Date().getMonth();
+  const lim = limiaresExtremos[mes];
+  if (!lim || !lim.n) return;
+
+  const cur = j.current, dia = j.daily || {};
+  const tMax = (dia.temperature_2m_max && dia.temperature_2m_max[0] != null) ? dia.temperature_2m_max[0] : cur.temperature_2m;
+  const tMin = (dia.temperature_2m_min && dia.temperature_2m_min[0] != null) ? dia.temperature_2m_min[0] : cur.temperature_2m;
+  const pDia = (dia.precipitation_sum && dia.precipitation_sum[0] != null) ? dia.precipitation_sum[0] : (cur.precipitation || 0);
+
+  const msgs = [];
+  const serie = lim.anoMin + '-' + lim.anoMax;
+  if (tMax >= lim.tempMax) {
+    msgs.push('A máxima de hoje (' + tMax.toFixed(1) + '°C) supera a maior máxima de ' + MESES_LONGOS[mes] + ' na série ' + serie + ' (' + lim.tempMax.toFixed(1) + '°C).');
+  }
+  if (tMin <= lim.tempMin) {
+    msgs.push('A mínima de hoje (' + tMin.toFixed(1) + '°C) é menor que a menor mínima de ' + MESES_LONGOS[mes] + ' na série ' + serie + ' (' + lim.tempMin.toFixed(1) + '°C).');
+  }
+  // Chuva: compara o dia com a média diária do mês mais chuvoso já registrado
+  const mediaDiaChuvoso = lim.precMax / diasNoMes(lim.anoMax, mes);
+  if (mediaDiaChuvoso > 0 && pDia >= mediaDiaChuvoso) {
+    msgs.push('A chuva de hoje (' + pDia.toFixed(1) + ' mm) supera a média diária do mês mais chuvoso de ' + MESES_LONGOS[mes] + ' (' + mediaDiaChuvoso.toFixed(1) + ' mm/dia).');
+  }
+  if (!msgs.length) return;
+
+  const local = localidadeAtual();
+  const ov = document.getElementById('alertaOverlay');
+  const tit = document.getElementById('alertaTitulo');
+  const msg = document.getElementById('alertaMsg');
+  const meta = document.getElementById('alertaMeta');
+  if (tit) tit.textContent = 'Alerta climático extremo';
+  if (msg) msg.textContent = msgs.join(' ');
+  if (meta) meta.textContent = (local.nome ? local.nome + ' - ' : '') + (local.cidade ? local.cidade + ' - ' : '') + new Date().toLocaleDateString('pt-BR') + ' | Série NASA POWER ' + serie;
+  if (ov) ov.style.display = 'block';
+}
+
+// Liga/desliga os alertas de extremos climáticos
+function alternarAlertas() {
+  alertasAtivos = !alertasAtivos;
+  try { localStorage.setItem('alertasClimaAtivos', alertasAtivos ? '1' : '0'); } catch (e) {}
+  const b = document.getElementById('btnAlertas');
+  const s = document.getElementById('alertaStatus');
+  if (b) {
+    b.textContent = alertasAtivos ? 'Alertas de extremos ativados' : 'Ativar alertas de extremos';
+    b.className = 'alerta-btn ' + (alertasAtivos ? 'alerta-btn-on' : 'alerta-btn-off');
+  }
+  if (s) {
+    s.textContent = alertasAtivos ? 'Ativo: compara com o mesmo mês (1981-2025).' : 'Alertas desativados. Compara o tempo atual com o mesmo mês (1981-2025).';
+  }
+  if (alertasAtivos) {
+    calcularLimiaresExtremos();
+    if (window._ultimoTempoAtual) avaliarAlertaClimatico(window._ultimoTempoAtual);
+  }
+}
+
+// Fecha o painel do alerta
+function fecharAlerta() {
+  const ov = document.getElementById('alertaOverlay');
+  if (ov) ov.style.display = 'none';
+}
+
+// ============================================================
 //  BUSCA DE DADOS - NASA POWER
 // ============================================================
 async function buscarMensal(anoIni, anoFim) {
