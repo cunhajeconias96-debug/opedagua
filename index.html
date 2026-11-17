@@ -232,7 +232,7 @@
     <img id="pebaHeaderImg" src="av_inverno.jpg" alt="Avatar" onclick="mudarFenotipo()">
     <div class="titulos">
       <h1>Ô PÉ D'ÁGUA</h1>
-      <p>Balsas-MA e Região &nbsp;|&nbsp; Clima e Precipitação</p>
+      <p>Clima</p>
     </div>
   </div>
 </div>
@@ -262,49 +262,6 @@
   <div class="split">
    <div class="col">
 
-  <div class="card">
-    <h2>Gráficos Climáticos</h2>
-    <div class="controls">
-      <label for="anoIni">Ano inicial:</label>
-      <select id="anoIni"></select>
-      <label for="anoFim">Ano final:</label>
-      <select id="anoFim"></select>
-      <label>Visualização:</label>
-      <div class="toggle-group">
-        <button id="btnAnual" class="active" onclick="mudarVisao('anual')">Anual</button>
-        <button id="btnMensal" onclick="mudarVisao('mensal')">Mensal</button>
-        <button id="btnEstacoes" onclick="mudarVisao('estacoes')">Estações</button>
-      </div>
-      <button onclick="atualizarGraficos()">Atualizar</button>
-    </div>
-    <canvas id="grafico1"></canvas>
-    <canvas id="grafico2"></canvas>
-  </div>
-
-   </div>
-   <div class="col">
-
-  <div class="card">
-    <h2>Calendário Climático</h2>
-    <div class="cal-nav">
-      <button onclick="mudarMes(-1)">&lt; Anterior</button>
-      <span class="cal-month-title" id="calTitulo">-</span>
-      <button onclick="mudarMes(1)">Próximo &gt;</button>
-      <label for="calAno">Ano:</label>
-      <select id="calAno" onchange="trocarAnoCal()"></select>
-      <button onclick="carregarDiario()">Carregar calendário</button>
-    </div>
-    <div class="legend">
-      <span>&#9728; Seco</span>
-      <span>&#9730; Chuvoso</span>
-      <span>&#9889; Chuva forte</span>
-      <span>&#9730; Tempestade</span>
-    </div>
-    <div class="cal-grid" id="calGrade"></div>
-    <div id="diarioStatus" class="note">Selecione o ano e clique em "Carregar calendário".</div>
-    <div id="diarioConteudo" style="display:none;"><div id="calendarioSaberCena" style="margin-top:10px;"></div></div>
-  </div>
-
   <div class="card" id="cardSaberes">
     <h2>Saberes Populares do Sertão (Balsas e região)</h2>
 
@@ -332,6 +289,9 @@
     </table></div>
   </div>
 
+   </div>
+    <div class="col">
+
   <div class="card">
     <h2>Tempo Agora</h2>
     <div class="controls">
@@ -357,6 +317,8 @@
     <div class="alerta-controls">
       <button id="btnAlertas" class="alerta-btn alerta-btn-off" onclick="alternarAlertas()">Ativar alertas de extremos</button>
       <span id="alertaStatus" class="alerta-status">Alertas desativados. Compara o tempo atual com o mesmo mês (1981–2025).</span>
+  </div>
+
     </div>
   </div>
 </div>
@@ -627,11 +589,16 @@ async function main() {
     const sel1 = document.getElementById('anoIni');
     const sel2 = document.getElementById('anoFim');
     const selA = document.getElementById('calAno');
-    anos.forEach(a => {
-      sel1.add(new Option(a, a)); sel2.add(new Option(a, a)); selA.add(new Option(a, a));
-    });
-    const anoPadrao = Math.max(2026, new Date().getFullYear());
-    sel1.value = 1981; sel2.value = anoPadrao; selA.value = anoPadrao;
+    if (sel1 && sel2) {
+      anos.forEach(a => {
+        sel1.add(new Option(a, a)); sel2.add(new Option(a, a));
+      });
+      sel1.value = 1981; sel2.value = Math.max(2026, new Date().getFullYear());
+    }
+    if (selA) {
+      anos.forEach(a => { selA.add(new Option(a, a)); });
+      selA.value = Math.max(2026, new Date().getFullYear());
+    }
 
     document.getElementById('loading').style.display = 'none';
     document.getElementById('content').style.display = 'block';
@@ -651,8 +618,11 @@ async function main() {
 }
 async function carregarMensal() {
   if (LAT == null || LON == null) { return; }
-  const ini = parseInt(document.getElementById('anoIni').value);
-  const fim = parseInt(document.getElementById('anoFim').value);
+  const iniEl = document.getElementById('anoIni');
+  const fimEl = document.getElementById('anoFim');
+  const anoPadrao = Math.max(2026, new Date().getFullYear());
+  const ini = iniEl ? parseInt(iniEl.value) : 1981;
+  const fim = fimEl ? parseInt(fimEl.value) : anoPadrao;
   document.getElementById('loading').style.display = 'block';
   document.getElementById('loading').textContent = 'Carregando dados (' + (fim-ini+1) + ' anos)...';
   dadosMensais = await buscarMensal(ini, fim);
@@ -665,6 +635,7 @@ async function carregarMensal() {
 }
 
 async function carregarDiario() {
+  if (!document.getElementById('calAno')) { dadosDiarios = null; return; }
   if (LAT == null || LON == null) {
     const status = document.getElementById('diarioStatus');
     const cont = document.getElementById('diarioConteudo');
@@ -689,7 +660,9 @@ async function carregarDiario() {
   }
 }
 function trocarAnoCal() {
-  const ano = parseInt(document.getElementById('calAno').value);
+  const calEl = document.getElementById('calAno');
+  if (!calEl) return;
+  const ano = parseInt(calEl.value);
   anoCal = ano; mesCal = 0;
   if (!dadosDiarios || !dadosDiarios[ano]) carregarDiario();
   else { renderCalendario(); atualizarTabelaDias(); }
@@ -765,7 +738,8 @@ function atualizarEventos() {
 
   const mediaP = totais.reduce((s,x)=>s+x.p,0)/totais.length;
 
-  document.getElementById('statsExt').innerHTML = `
+  const elStatsExt = document.getElementById('statsExt');
+  if (elStatsExt) elStatsExt.innerHTML = `
     <div class="stat"><div class="value">${maisChuvoso.a}</div><div class="label">Ano mais chuvoso (${maisChuvoso.p.toFixed(0)} mm)</div></div>
     <div class="stat"><div class="value">${maisSeco.a}</div><div class="label">Ano mais seco (${maisSeco.p.toFixed(0)} mm)</div></div>
     <div class="stat"><div class="value">${maisQuente.a}</div><div class="label">Ano mais quente (${maisQuente.t.toFixed(1)}°C)</div></div>
@@ -775,7 +749,8 @@ function atualizarEventos() {
     <div class="stat"><div class="value">${recFrio.t.toFixed(1)}°C</div><div class="label">Mês mais frio (${MESES_LONGOS[recFrio.m]}/${recFrio.a})</div></div>
     <div class="stat"><div class="value">${seqMax} anos</div><div class="label">Maior sequência seca (${seqMelhorIni}-${seqMelhorFim})</div></div>`;
 
-  document.getElementById('resumoExt').innerHTML = `
+  const elResumoExt = document.getElementById('resumoExt');
+  if (elResumoExt) elResumoExt.innerHTML = `
     <div class="destaque">
       <strong>Eventos extremos registrados em ${localidadeAtual().nome} / ${localidadeAtual().cidade} (${localidadeAtual().lat.toFixed(3)}°, ${localidadeAtual().lon.toFixed(3)}°) — 1981 a 2025:</strong><br>
       • <strong>${chuvassimos.length}</strong> ano(s) com precipitação extrema (≥ 2.000 mm): ${chuvassimos.map(x=>x.a+' ('+x.p.toFixed(0)+'mm)').join(', ') || '—'}<br>
@@ -795,13 +770,15 @@ function atualizarEventos() {
 function mudarVisao(v) {
   visaoAtual = v;
   ['anual','mensal','estacoes'].forEach(x => {
-    document.getElementById('btn'+x.charAt(0).toUpperCase()+x.slice(1)).className = (x===v?'active':'');
+    const btn = document.getElementById('btn'+x.charAt(0).toUpperCase()+x.slice(1));
+    if (btn) btn.className = (x===v?'active':'');
   });
   atualizarGraficos();
 }
 
 function atualizarGraficos() {
   if (!dadosMensais) return;
+  if (!document.getElementById('grafico1')) return;
   const anos = Object.keys(dadosMensais).map(Number).sort((a,b)=>a-b);
 
   if (grafico1) grafico1.destroy();
@@ -916,7 +893,7 @@ function atualizarCabecalhoLocal() {
   const info = document.getElementById('infoLocal');
   if (info) info.textContent = tem ? (L.nome + (L.cidade ? ', ' + L.cidade : '') + ' (' + Math.abs(L.lat).toFixed(3) + '°S, ' + Math.abs(L.lon).toFixed(3) + '°O)') : 'Selecione uma localidade ou use GPS';
   const p = document.querySelector('.header p');
-  if (p) p.textContent = tem ? (L.nome + (L.cidade ? ', ' + L.cidade : '') + '  |  Clima e Precipitação') : 'Balsas-MA e Região  |  Clima e Precipitação';
+  if (p) p.textContent = 'Clima';
   const g = document.querySelector('.gps-btn');
   if (g && L && L.link && L.link !== '#') g.href = L.link;
   atualizarPerfilRegiao();
@@ -943,7 +920,6 @@ function trocarLocal() {
   dadosDiarios = null;
   atualizarCabecalhoLocal();
   carregarMensal();
-  carregarDiario();
   carregarTempoAgora();
 }
 
@@ -1025,10 +1001,12 @@ function usarGPS() {
 //  CALENDARIO CLIMATICO
 // ============================================================
 function mudarMes(d) {
+  if (!document.getElementById('calAno')) return;
   mesCal += d;
   if (mesCal < 0) { mesCal = 11; anoCal--; }
   if (mesCal > 11) { mesCal = 0; anoCal++; }
   const sel = document.getElementById('calAno');
+  if (!sel) return;
   if (parseInt(sel.value) !== anoCal) {
     sel.value = anoCal;
     if (Object.keys(dadosDiarios||{}).indexOf(String(anoCal)) === -1) {
@@ -1043,12 +1021,14 @@ function mudarMes(d) {
 
 function renderCalendario() {
   const grade = document.getElementById('calGrade');
+  if (!grade) return;
   grade.innerHTML = '';
   ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].forEach(d => {
     const h = document.createElement('div');
     h.className = 'cal-header'; h.textContent = d; grade.appendChild(h);
   });
-  document.getElementById('calTitulo').textContent = MESES_LONGOS[mesCal] + ' ' + anoCal;
+  const calT = document.getElementById('calTitulo');
+  if (calT) calT.textContent = MESES_LONGOS[mesCal] + ' ' + anoCal;
 
   const dias = (dadosDiarios && dadosDiarios[anoCal]) ? dadosDiarios[anoCal][mesCal] : null;
   const primeiro = new Date(anoCal, mesCal, 1).getDay();
@@ -1112,9 +1092,17 @@ function consultarSaberPopular() {
   const inp = document.getElementById('dataSaber');
   const out = document.getElementById('resultadoSaber');
   const cenaWrap = document.getElementById('saberCenaConsulta');
+  const btn = document.getElementById('btnVerSaber');
   if (!inp || !out) return;
   const v = inp.value;
-  if (!v) { out.innerHTML = 'Selecione uma data para consultar.'; if (cenaWrap) cenaWrap.innerHTML = ''; return; }
+  if (v && window._saberDiaAberto === v) {
+    window._saberDiaAberto = null;
+    out.innerHTML = '';
+    if (cenaWrap) cenaWrap.innerHTML = '';
+    if (btn) btn.textContent = 'Ver saber popular do dia';
+    return;
+  }
+  if (!v) { window._saberDiaAberto = null; if (btn) btn.textContent = 'Ver saber popular do dia'; out.innerHTML = 'Selecione uma data para consultar.'; if (cenaWrap) cenaWrap.innerHTML = ''; return; }
   const d = new Date(v + 'T12:00:00');
   const dia = d.getDate();
   const mes = d.getMonth() + 1;
@@ -1130,6 +1118,8 @@ function consultarSaberPopular() {
   // dias similares/associados aos saberes
   if (!cenaId && (mes === 10 || mes === 11)) { msgs.push('<b>Outubro/Novembro:</b> período associado à “chuva de caju” e também a chuvas de trovão.'); cenaId = 'trovao'; }
   if (!msgs.length) msgs.push('Não há uma data especial tradicional cadastrada para ' + dia + ' de ' + nomesMes[mes-1] + '. Consulte as datas e mitos mais falados abaixo.');
+  window._saberDiaAberto = v;
+  if (btn) btn.textContent = 'Fechar saber do dia';
   out.innerHTML = msgs.map(m => '<div style="margin:6px 0;">• ' + m + '</div>').join('');
   if (cenaWrap) {
     if (cenaId) {
@@ -1260,17 +1250,7 @@ function mostrarCenaSaber(id) {
   leg.textContent = cena.legenda;
 }
 
-// atualizar cena quando avatar/estação mudar
-const _aplicarAvatarOrig = aplicarAvatar;
-
-
-const _aplicarAvatarBase = aplicarAvatar;
-aplicarAvatar = function(idx){
-  _aplicarAvatarBase(idx);
-  try { const avs=document.getElementById('avatarSaberAponta'); if(avs) avs.src = (typeof avatarAtualSrc==='function'?avatarAtualSrc():(AVATARES_PNG[idx]||AVATARES[idx])); } catch(e) {}
-  try { const ativo = document.querySelector('#saberesOpcoes button.ativo'); if (ativo) mostrarCenaSaber(ativo.getAttribute('data-id')); } catch(e) {}
-};
-
+// (a cena de Saberes é atualizada apenas pelo botao do saber do dia)
 try { if (localStorage.getItem('alertasClimaAtivos') === '1') { alertasAtivos = true; } } catch(e) {}
 
 prepararAvatares().then(function(){ aplicarAvatar(1); });
