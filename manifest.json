@@ -1,0 +1,39 @@
+{
+  "name": "Ô PÉ D'ÁGUA - Balsas-MA e Região",
+  "short_name": "Ô Pé d'Água",
+  "description": "Clima e precipitação - região das localidades: Balsas-MA, Riachão-MA, Campos Lindos-TO. Dados NASA POWER 1981-2025.",
+  "start_url": "./app_chuva.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef3f8",
+  "theme_color": "#1a5276",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": [
+    "education",
+    "weather",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "icone_app.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icone_app.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Calendario climatico",
+      "short_name": "Calendario",
+      "url": "./app_chuva.html"
+    }
+  ]
+}

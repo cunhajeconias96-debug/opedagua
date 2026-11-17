@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ô Pé d'Água">
+<meta name="theme-color" content="#1a5276">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icone_app.png" type="image/png">
+<link rel="apple-touch-icon" href="icone_app.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icone_app.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icone_app.png">
+<link rel="apple-touch-icon" sizes="120x120" href="icone_app.png">
+<title>Ô PÉ D'ÁGUA - Balsas-MA e Região</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; background: #eef3f8; min-height: 100vh; padding: 10px; color: #333; }
+  h1 { color: #1a5276; font-size: 22px; }
+  h2 { color: #2874a6; margin: 10px 0 6px 0; font-size: 15px; }
+  h3 { color: #2874a6; margin: 6px 0; font-size: 12px; }
+  .card { background: #fff; border-radius: 8px; padding: 12px; margin: 8px 0; box-shadow: 0 2px 4px rgba(0,0,0,.1); }
+  .stats { display: flex; gap: 8px; flex-wrap: wrap; }
+  .stat { background: #eaf2f8; padding: 9px; border-radius: 6px; flex: 1; min-width: 105px; text-align: center; }
+  .stat .value { font-size: 18px; font-weight: bold; color: #1a5276; }
+  .stat .label { font-size: 10px; color: #555; }
+  canvas { max-height: 210px; }
+  .info { background: #fef9e7; padding: 10px; border-left: 4px solid #f39c12; margin: 8px 0; font-size: 12px; border-radius: 4px; line-height: 1.6; }
+  .climate { background: #e8f6f3; padding: 10px; border-left: 4px solid #27ae60; margin: 8px 0; font-size: 12px; border-radius: 4px; line-height: 1.6; }
+  .destaque { background: #f4ecfb; padding: 10px; border-left: 4px solid #8e44ad; margin: 8px 0; font-size: 12px; border-radius: 4px; line-height: 1.6; }
+  button { padding: 6px 12px; background: #2874a6; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin: 3px; }
+  button:hover { background: #1a5276; }
+  button.active { background: #1a5276; }
+  select { padding: 5px; font-size: 12px; border-radius: 4px; border: 1px solid #ccc; }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
+  .controls label { font-weight: bold; font-size: 12px; }
+  #loading { text-align: center; padding: 40px; font-size: 16px; color: #555; }
+  #content { display: none; }
+  table { width: 100%; border-collapse: collapse; margin: 5px 0; font-size: 11px; }
+  th, td { padding: 4px; text-align: center; border: 1px solid #ddd; }
+  th { background: #2874a6; color: #fff; font-size: 11px; }
+  tr:nth-child(even) { background: #f2f2f2; }
+  .highlight { background: #d5f5e3; font-weight: bold; }
+  .note { font-size: 10px; color: #777; font-style: italic; }
+  .toggle-group { display: flex; gap: 3px; }
+  .gps-btn { position: fixed; top: 10px; left: 10px; z-index: 1000; background: #2874a6; color: #fff; padding: 8px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; box-shadow: 0 2px 4px rgba(0,0,0,.3); }
+  .gps-btn:hover { background: #1a5276; }
+  .header { background: #1a5276; padding: 12px; border-radius: 8px; margin-bottom: 10px; text-align: center; color: #fff; }
+  .header h1 { color: #fff; font-size: 26px; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,.4); }
+  .header p { font-size: 13px; margin: 4px 0 0 0; }
+  .header img { width: 100%; max-height: 150px; object-fit: cover; border-radius: 8px; margin-bottom: 10px; border: 2px solid rgba(255,255,255,.25); }
+  .header-peba { display: flex; align-items: center; justify-content: center; gap: 12px; }
+  .header-peba img { width: 150px; height: 150px; max-height: none; object-fit: contain; margin: 0; background: transparent; border: none; border-radius: 0; padding: 0; filter: drop-shadow(0 2px 6px rgba(0,0,0,.5)); }
+  .header-peba .titulos { text-align: left; }
+
+  /* Calendario climatico */
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin: 10px 0; }
+  .cal-header { text-align: center; font-weight: bold; font-size: 11px; padding: 5px; background: #2874a6; color: #fff; border-radius: 4px; }
+  .cal-day { text-align: center; padding: 6px 2px; border-radius: 8px; font-size: 11px; min-height: 68px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(0,0,0,.08); overflow: hidden; position: relative; }
+  .cal-day::before { content: ''; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 38px; opacity: .18; z-index: 0; }
+  .cal-day.rainy::before { content: '\2601'; }
+  .cal-day.dry::before { content: '\2600'; }
+  .cal-day.heavy::before { content: '\26C8'; opacity: .25; }
+  .cal-day > * { position: relative; z-index: 1; }
+  .cal-day.empty { background: transparent; }
+  .cal-day.rainy { background: rgba(174,214,241,.5); }
+  .cal-day.dry { background: rgba(254,249,231,.5); }
+  .cal-day.heavy { background: rgba(245,183,177,.5); }
+  .cal-day .day-num { font-weight: bold; font-size: 13px; }
+  .cal-day .temp { font-size: 10px; color: #c0392b; }
+  .cal-day .precip { font-size: 9px; color: #1a5276; }
+  .cal-nav { display: flex; gap: 10px; align-items: center; justify-content: center; margin: 10px 0; flex-wrap: wrap; }
+  .cal-month-title { font-size: 18px; font-weight: bold; color: #1a5276; min-width: 130px; text-align: center; }
+  .legend { display: flex; gap: 14px; justify-content: center; margin: 10px 0; flex-wrap: wrap; font-size: 12px; }
+
+  /* Avatar - flutua por toda a tela */
+  .avatar-floating { --aw: 130px; position: fixed; bottom: 18px; left: 0; width: var(--aw); height: var(--aw); z-index: 9999; cursor: pointer; animation: walkAcross 26s linear infinite; }
+  .avatar-floating img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 5px rgba(0,0,0,.35)); animation: floatSlow 3s ease-in-out infinite; }
+  .avatar-floating.season-spring img { animation: springAnim 3s ease-in-out infinite; }
+  .avatar-floating.season-autumn img { animation: autumnAnim 3s ease-in-out infinite; }
+  @keyframes walkAcross {
+    0%   { left: 0px; transform: scaleX(1); }
+    49%  { left: calc(100% - var(--aw)); transform: scaleX(1); }
+    50%  { left: calc(100% - var(--aw)); transform: scaleX(-1); }
+    99%  { left: 0px; transform: scaleX(-1); }
+    100% { left: 0px; transform: scaleX(1); }
+  }
+  @keyframes floatSlow { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+  @keyframes springAnim { 0% { transform: rotate(-10deg) scale(1); } 50% { transform: rotate(5deg) scale(.9); } 100% { transform: rotate(-10deg) scale(1); } }
+  @keyframes autumnAnim { 0% { transform: scale(1) rotate(0); } 50% { transform: scale(1.14) rotate(5deg); } 100% { transform: scale(1) rotate(0); } }
+  .avatar-dica { position: fixed; bottom: 158px; left: 12px; background: #fff; color: #333; padding: 6px 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,.25); font-size: 11px; z-index: 9999; display: none; } 50% { transform: scale(1.15) rotate(6deg); } }
+
+  /* Tempo agora */
+  .now-grid { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+  .now-main { flex: 1 1 190px; background: linear-gradient(135deg,#2874a6,#1a5276); color: #fff; border-radius: 10px; padding: 14px; text-align: center; }
+  .now-main .temp-now { font-size: 42px; font-weight: bold; line-height: 1; }
+  .now-main .desc-now { font-size: 13px; margin-top: 4px; }
+  .now-main .local-now { font-size: 11px; opacity: .85; margin-top: 6px; }
+  .now-item { flex: 1 1 118px; background: #eaf2f8; border-radius: 8px; padding: 10px 8px; text-align: center; }
+  .now-item .v { font-size: 17px; font-weight: bold; color: #1a5276; }
+  .now-item .l { font-size: 10px; color: #555; margin-top: 2px; }
+  .now-emoji { font-size: 46px; }
+  .gps-btn-atual { background: #8e44ad; }
+  .gps-btn-atual:hover { background: #7d3c98; }
+  .sel-local { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 12px; }
+  .sel-local label { font-weight: bold; font-size: 12px; color: #1a5276; }
+  .sel-local select { flex: 1 1 250px; min-width: 170px; }
+
+  /* Layout dividido em duas colunas a partir das Estatisticas Gerais */
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
+  .col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .split .card { margin: 0; }
+  @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
+
+  /* ============ COMPATIBILIDADE CELULAR (Android / iPhone) ============ */
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body { overflow-x: hidden; padding: 8px 8px calc(14px + env(safe-area-inset-bottom)) 8px; padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right)); }
+  img, canvas, table { max-width: 100%; }
+  button, select, a { touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0); }
+  .tabela-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tabela-wrap table { min-width: 420px; }
+  #tabelaDias { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+  #tabelaDias table { min-width: 380px; }
+  .stats-inline { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e0c98a; font-size: 11px; color: #6b5a1e; }
+  .stats-inline span { white-space: nowrap; }
+  .stats-inline b { color: #b9770e; }
+
+  @media (max-width: 700px) {
+    body { padding: 6px 6px calc(12px + env(safe-area-inset-bottom)) 6px; }
+    .header { padding: 10px 8px; }
+    .header img { max-height: 110px; }
+    .header h1 { font-size: 21px; }
+    .header p { font-size: 11px; }
+    .header-peba { gap: 8px; }
+    .header-peba img { width: 58px; height: 58px; }
+    h2 { font-size: 14px; margin: 6px 0 5px 0; }
+    h3 { font-size: 11px; }
+    .card { padding: 9px; margin: 6px 0; border-radius: 8px; }
+    .info, .climate, .destaque { font-size: 11px; padding: 8px; }
+    .stats { gap: 5px; }
+    .stat { min-width: 44%; padding: 7px 4px; }
+    .stat .value { font-size: 15px; }
+    .stat .label { font-size: 9px; }
+    .controls { gap: 5px; }
+    .controls label { font-size: 11px; }
+    select, button { font-size: 12px; padding: 7px 9px; min-height: 34px; }
+    canvas { max-height: 180px; }
+    .cal-grid { gap: 2px; }
+    .cal-header { font-size: 9px; padding: 4px 1px; }
+    .cal-day { min-height: 52px; padding: 4px 1px; font-size: 9px; }
+    .cal-day .day-num { font-size: 11px; }
+    .cal-day .temp { font-size: 8px; }
+    .cal-day .precip { font-size: 7px; }
+    .cal-day::before { font-size: 26px; }
+    .cal-month-title { font-size: 15px; min-width: 105px; }
+    .cal-nav { gap: 5px; }
+    .legend { gap: 9px; font-size: 10px; }
+    table { font-size: 10px; }
+    th, td { padding: 3px 2px; }
+    .gps-btn { top: calc(6px + env(safe-area-inset-top)); left: calc(6px + env(safe-area-inset-left)); padding: 7px 10px; font-size: 11px; }
+    .avatar-floating { --aw: 46px; bottom: calc(10px + env(safe-area-inset-bottom)); }
+    .avatar-dica { bottom: calc(122px + env(safe-area-inset-bottom)); left: 8px; font-size: 10px; }
+    .now-main .temp-now { font-size: 34px; }
+    .now-emoji { font-size: 36px; }
+    .now-item { flex: 1 1 44%; }
+  }
+  @media (max-width: 380px) {
+    .stat { min-width: 46%; }
+    .header-peba img { width: 50px; height: 50px; }
+    .cal-day { min-height: 46px; }
+  }
+  /* Alertas climaticos extremos */
+  .alerta-controls { margin: 10px 0 6px 0; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .alerta-btn { padding:8px 14px; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:700; }
+  .alerta-btn-on { background:#27ae60; color:#fff; }
+  .alerta-btn-off { background:#7f8c8d; color:#fff; }
+  .alerta-status { font-size:12px; color:#555; }
+  .alerta-overlay { position:fixed; left:12px; right:12px; bottom:170px; z-index:2000; display:none; }
+  .alerta-card { background:linear-gradient(135deg,#7b241c,#c0392b); color:#fff; border-radius:14px; padding:14px 14px 12px 14px; box-shadow:0 8px 24px rgba(0,0,0,.35); border:2px solid #f5b7b1; display:flex; gap:12px; align-items:flex-start; }
+  .alerta-avatar { width:72px; height:72px; border-radius:50%; object-fit:cover; border:3px solid #fff; flex:0 0 auto; background:#fff; }
+  .alerta-body { flex:1; min-width:0; }
+  .alerta-title { font-weight:800; font-size:16px; margin-bottom:4px; }
+  .alerta-msg { font-size:13px; line-height:1.35; }
+  .alerta-meta { font-size:11px; opacity:.92; margin-top:6px; }
+  .alerta-actions { margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; }
+  .alerta-actions button { border:none; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:12px; font-weight:700; }
+  .alerta-close { background:#fff; color:#7b241c; }
+  @media (max-width: 768px) { .alerta-overlay { bottom:140px; left:8px; right:8px; } .alerta-avatar { width:60px; height:60px; } .alerta-title { font-size:15px; } }
+
+  /* Saberes visuais com avatar */
+  .saberes-cenas { margin-top: 14px; }
+  .saberes-opcoes { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 12px 0; }
+  .saberes-opcoes button { border:1px solid #cfd8dc; background:#f7fbff; color:#1a5276; border-radius:8px; padding:8px 10px; cursor:pointer; font-size:12px; font-weight:600; }
+  .saberes-opcoes button.ativo { background:#1a5276; color:#fff; border-color:#1a5276; }
+  .saber-palco-wrap { display:flex; justify-content:center; }
+  .saber-palco { width:100%; max-width:420px; background:linear-gradient(#eaf6ff,#fdfefe); border:1px solid #d6eaf8; border-radius:14px; padding:12px; position:relative; overflow:hidden; }
+  .saber-cena { position:relative; height:280px; border-radius:10px; background:linear-gradient(#d6eaf8 0%, #eef7ff 55%, #e9f7ef 55%, #d5f5e3 100%); overflow:hidden; }
+  .saber-avatar { position:absolute; bottom:18px; left:50%; transform:translateX(-50%); width:120px; height:120px; object-fit:contain; z-index:3; filter: drop-shadow(0 2px 4px rgba(0,0,0,.2)); }
+  .saber-el { position:absolute; z-index:2; user-select:none; pointer-events:none; }
+  .saber-legenda { margin-top:10px; text-align:center; font-weight:700; color:#154360; background:#fff; border:1px solid #d6eaf8; border-radius:10px; padding:10px; font-size:14px; }
+  .nuvem { width:140px; height:54px; background:#566573; border-radius:40px; box-shadow:30px 10px 0 0 #566573, 70px 0 0 0 #566573, 45px -18px 0 0 #566573; opacity:.95; }
+  .nuvem.clara { background:#85929e; box-shadow:30px 10px 0 0 #85929e, 70px 0 0 0 #85929e, 45px -18px 0 0 #85929e; }
+  .gota { width:4px; height:10px; background:#3498db; border-radius:4px; opacity:.8; }
+  .raio { width:0; height:0; border-left:10px solid transparent; border-right:10px solid transparent; border-top:34px solid #f4d03f; filter: drop-shadow(0 0 2px #d4ac0d); transform:skewX(-10deg); }
+  .lua { width:70px; height:70px; border-radius:50%; background:#f7dc6f; box-shadow:0 0 12px rgba(244,208,63,.6); }
+  .halo { width:110px; height:110px; border-radius:50%; border:4px solid rgba(255,255,255,.85); box-shadow:0 0 10px rgba(255,255,255,.5); }
+  .cupim { font-size:18px; }
+  .sapo { font-size:34px; }
+  .manga { font-size:46px; }
+  .mangueira { font-size:70px; }
+  .nota-cena { position:absolute; left:8px; right:8px; top:8px; text-align:center; font-size:12px; color:#1b4f72; font-weight:600; z-index:4; background:rgba(255,255,255,.75); border-radius:8px; padding:4px 6px; }
+  @keyframes correr { 0%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-42%) translateY(-2px)} 100%{transform:translateX(-50%) translateY(0)} }
+  @keyframes cair { 0%{transform:translateY(0); opacity:.9} 100%{transform:translateY(40px); opacity:.2} }
+  @keyframes voar { 0%{transform:translate(0,0)} 50%{transform:translate(10px,-8px)} 100%{transform:translate(0,0)} }
+  .anim-correr { animation:correr .5s infinite; }
+  .anim-cair { animation:cair .8s linear infinite; }
+  .anim-voar { animation:voar 1.4s ease-in-out infinite; }
+  @media (max-width: 480px){ .saber-cena{height:250px;} .saber-avatar{width:105px;height:105px;} }
+
+</style>
+</head>
+<body>
+<button id="btnInstalar" onclick="instalarApp()" style="display:none; position:fixed; top:10px; right:10px; z-index:1000; background:#27ae60; padding:8px 12px; border-radius:6px; border:none; color:#fff; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,.3);">⬇ Instalar App</button>
+
+<div class="header">
+  <img id="headerBanner" src="tempo_inverno.jpg" alt="Ô PÉ D'ÁGUA">
+  <div class="header-peba">
+    <img id="pebaHeaderImg" src="av_inverno.jpg" alt="Avatar" onclick="mudarFenotipo()">
+    <div class="titulos">
+      <h1>Ô PÉ D'ÁGUA</h1>
+      <p>Balsas-MA e Região &nbsp;|&nbsp; Clima e Precipitação</p>
+    </div>
+  </div>
+</div>
+
+<div class="info">
+  <strong>REGIÃO DAS LOCALIDADES DO GPS:</strong> MUNICÍPIOS BALSAS-MA, RIACHÃO-MA, CAMPOS LINDOS-TO<br>
+  <strong>Local atual:</strong> <span id="infoLocal">Selecione uma localidade ou use GPS</span><br>
+  <strong>Fonte:</strong> NASA POWER / MERRA-2 &nbsp;|&nbsp; <strong>Período:</strong> 1981–2026 (até o momento, com atualização contínua) &nbsp;|&nbsp; <strong>Chuvoso (região):</strong> Nov-Abr<br>
+  <strong>Estação de referência:</strong> <span id="infoEstacao">Selecione uma localidade</span>
+  <div class="stats-inline" id="statsInline"></div>
+</div>
+
+<div class="climate" id="infoClimaRegiao">
+  <strong>Clima da região:</strong> Selecione uma localidade para ver o perfil climático regional e os dados específicos do ponto (NASA POWER 1981–2026).
+</div>
+
+<div id="loading">Selecione uma localidade para carregar os dados.</div>
+
+<div class="card sel-local">
+  <label for="selLocal">📍 Região / Localidade:</label>
+  <select id="selLocal" onchange="trocarLocal()"></select>
+  <span class="note" id="localCoords"></span>
+  <a id="linkMapa" class="gps-btn-atual" style="position:static;display:inline-block;padding:5px 10px;border-radius:4px;color:#fff;text-decoration:none;font-size:11px;margin-left:6px;" target="_blank">Ver no mapa</a>
+</div>
+
+<div id="content">
+  <div class="split">
+   <div class="col">
+
+  <div class="card">
+    <h2>Gráficos Climáticos</h2>
+    <div class="controls">
+      <label for="anoIni">Ano inicial:</label>
+      <select id="anoIni"></select>
+      <label for="anoFim">Ano final:</label>
+      <select id="anoFim"></select>
+      <label>Visualização:</label>
+      <div class="toggle-group">
+        <button id="btnAnual" class="active" onclick="mudarVisao('anual')">Anual</button>
+        <button id="btnMensal" onclick="mudarVisao('mensal')">Mensal</button>
+        <button id="btnEstacoes" onclick="mudarVisao('estacoes')">Estações</button>
+      </div>
+      <button onclick="atualizarGraficos()">Atualizar</button>
+    </div>
+    <canvas id="grafico1"></canvas>
+    <canvas id="grafico2"></canvas>
+  </div>
+
+   </div>
+   <div class="col">
+
+  <div class="card">
+    <h2>Calendário Climático</h2>
+    <div class="cal-nav">
+      <button onclick="mudarMes(-1)">&lt; Anterior</button>
+      <span class="cal-month-title" id="calTitulo">-</span>
+      <button onclick="mudarMes(1)">Próximo &gt;</button>
+      <label for="calAno">Ano:</label>
+      <select id="calAno" onchange="trocarAnoCal()"></select>
+      <button onclick="carregarDiario()">Carregar calendário</button>
+    </div>
+    <div class="legend">
+      <span>&#9728; Seco</span>
+      <span>&#9730; Chuvoso</span>
+      <span>&#9889; Chuva forte</span>
+      <span>&#9730; Tempestade</span>
+    </div>
+    <div class="cal-grid" id="calGrade"></div>
+    <div id="diarioStatus" class="note">Selecione o ano e clique em "Carregar calendário".</div>
+    <div id="diarioConteudo" style="display:none;"><div id="calendarioSaberCena" style="margin-top:10px;"></div></div>
+  </div>
+
+  <div class="card" id="cardSaberes">
+    <h2>Saberes Populares do Sertão (Balsas e região)</h2>
+
+    <h3>Consultar por dia específico</h3>
+    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin:8px 0;">
+      <div style="position:relative; width:120px; height:120px; flex:0 0 auto;">
+        <img id="avatarSaberAponta" src="av_inverno.jpg" alt="Avatar" style="width:110px;height:110px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.2));">
+        <div style="position:absolute; right:-6px; bottom:28px; font-size:34px; transform:rotate(-20deg);">👉</div>
+      </div>
+      <div class="controls" style="margin:0;">
+        <label>Data: <input type="date" id="dataSaber" /></label>
+        <button id="btnVerSaber" onclick="consultarSaberPopular()">Ver saber popular do dia</button>
+      </div>
+    </div>
+    <div id="resultadoSaber" class="note" style="margin-bottom:12px;"></div>
+    <div id="saberCenaConsulta" style="margin:8px 0 12px 0;"></div>
+
+    <h3>Datas e mitos mais falados</h3>
+    <div class="tabela-wrap"><table>
+      <tr><th>Data</th><th>Santo / Dia</th><th>Diz o povo</th></tr>
+      <tr><td><b>13/12</b></td><td>Santa Luzia (experiência)</td><td>As avós fazem até hoje: colocam 6 (ou 12) pedrinhas de sal numa tábua, cada uma representando um mês. De manhã, observam quais derreteram — aqueles meses teriam mais chuva.</td></tr>
+      <tr><td><b>19/03</b></td><td>Dia de São José</td><td>É o principal sinal. Se chover em São José, o povo de Balsas diz que “o inverno tá confirmado”. Se fizer sol forte, muitos se preparam para um ano mais difícil para as lavouras (como o milho).</td></tr>
+      <tr><td><b>24/06</b></td><td>Dia de São João</td><td>Em junho já é período de seca. Se chover no São João, o povo diz que é “chuva de despedida do inverno” e sinal de bom ano seguinte.</td></tr>
+      <tr><td><b>08/12</b></td><td>Nossa Senhora da Conceição</td><td>Em muitas cidades do Maranhão, se trovejar nesse dia, acredita-se que o inverno vem cedo.</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h2>Tempo Agora</h2>
+    <div class="controls">
+      <button id="btnGPS" class="gps-btn-atual" onclick="usarGPS()">📍 Usar minha localização (GPS)</button>
+      <button onclick="carregarTempoAgora()">Atualizar agora</button>
+      <span class="note" id="nowLocal"></span>
+    </div>
+    <div class="now-grid" id="nowGrid">
+      <div class="now-main">
+        <div class="now-emoji" id="nowEmoji">🌡️</div>
+        <div class="temp-now" id="nowTemp">--°C</div>
+        <div class="desc-now" id="nowDesc">Carregando...</div>
+        <div class="local-now" id="nowPlace">? P? d'?gua, Balsas-MA</div>
+      </div>
+      <div class="now-item"><div class="v" id="nowSens">--°C</div><div class="l">Sensação térmica</div></div>
+      <div class="now-item"><div class="v" id="nowUmi">--%</div><div class="l">Umidade</div></div>
+      <div class="now-item"><div class="v" id="nowPrec">-- mm</div><div class="l">Chuva agora</div></div>
+      <div class="now-item"><div class="v" id="nowVento">-- km/h</div><div class="l">Vento</div></div>
+      <div class="now-item"><div class="v" id="nowMax">--°C</div><div class="l">Máxima hoje</div></div>
+      <div class="now-item"><div class="v" id="nowMin">--°C</div><div class="l">Mínima hoje</div></div>
+    </div>
+    <p class="note" id="nowFonte" style="margin-top:8px;">Fonte: Open-Meteo (modelo ECMWF) em tempo real.</p>
+    <div class="alerta-controls">
+      <button id="btnAlertas" class="alerta-btn alerta-btn-off" onclick="alternarAlertas()">Ativar alertas de extremos</button>
+      <span id="alertaStatus" class="alerta-status">Alertas desativados. Compara o tempo atual com o mesmo mês (1981–2025).</span>
+    </div>
+  </div>
+</div>
+
+<div id="alertaOverlay" class="alerta-overlay" role="alert" aria-live="assertive">
+  <div class="alerta-card">
+    <img id="alertaAvatarImg" class="alerta-avatar" src="av_inverno.jpg" alt="Avatar">
+    <div class="alerta-body">
+      <div class="alerta-title" id="alertaTitulo">Alerta climático</div>
+      <div class="alerta-msg" id="alertaMsg"></div>
+      <div class="alerta-meta" id="alertaMeta"></div>
+      <div class="alerta-actions">
+        <button class="alerta-close" onclick="fecharAlerta()">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="avatar-dica" id="avatarDica">Clique no avatar para trocar de esta??o!</div>
+<div class="avatar-floating season-winter" id="avatarFloating" data-p="1" onclick="mudarFenotipo()">
+  <img id="avatarImg" src="av_inverno.jpg" alt="Avatar">
+</div>
+
+<script>
+// ============================================================
+//  DADOS E CONFIGURACAO
+// ============================================================
+let LAT = -7.7530726, LON = -46.3716666;
+let USANDO_GPS = false;
+
+// Localidades monitoradas (dados reais NASA POWER 1981-2025)
+const LOCALIDADES = [
+  { nome: 'Povoado Passagem da Ponte - Escola São Raimundo', cidade: 'Balsas-MA', lat: -7.7530726, lon: -46.3716666, link: 'https://www.google.com/maps/search/-7.7530726,-46.3716666' },
+  { nome: 'Vão da Salina - Escola Dr. Luis Rocha',           cidade: 'Balsas-MA', lat: -7.8433131, lon: -46.3172379, link: 'https://maps.app.goo.gl/FYjS2PfWPdZior9e9' },
+  { nome: 'Riachão - Escola Dom Franco Masserdotti',        cidade: 'Riachão-MA', lat: -7.791958,  lon: -46.526533,  link: 'https://maps.app.goo.gl/7ZmaFcABmxAeSDQE7' },
+  { nome: 'Povoado Peba - Escola São Cristóvão',            cidade: 'Balsas-MA', lat: -7.994932,  lon: -46.374768,  link: 'https://maps.app.goo.gl/9Pg3TwXSkSbtMmjd7' },
+  { nome: 'Povoado Coroatá - Escola Nossa Senhora Aparecida', cidade: 'Balsas-MA', lat: -8.342768, lon: -46.349588,  link: 'https://maps.app.goo.gl/YVbXqyvcquW2kpLDA' },
+  { nome: 'Povoado Sítio - Escola Arcanjo Soares',          cidade: 'Campos Lindos-TO', lat: -8.045452, lon: -46.484753, link: 'https://maps.app.goo.gl/qBPLwEDKQjEsjK7d6' }
+];
+let LAT = null, LON = null;
+let LOCAL_ATUAL = -1; // sem local selecionado inicialmente
+let LOCAL_GPS = null; // { nome, cidade, lat, lon } quando usa GPS do celular
+
+function localidadeAtual() {
+  if (LOCAL_GPS) return LOCAL_GPS;
+  if (LOCAL_ATUAL >= 0 && LOCALIDADES[LOCAL_ATUAL]) return LOCALIDADES[LOCAL_ATUAL];
+  return { nome: 'Selecione uma localidade', cidade: '', lat: null, lon: null, link: '#' };
+}
+const API = 'https://power.larc.nasa.gov/api/temporal';
+const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const MESES_LONGOS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+let dadosMensais = null;   // { ano: [12 precip, 12 temp] }
+let dadosDiarios = null;    // { ano: [ [ {p,t} x dias ] x 12 ] }
+let anoCal = Math.max(2026, new Date().getFullYear()), mesCal = 0;
+let visaoAtual = 'anual';
+let grafico1 = null, grafico2 = null, graficoDiario = null;
+
+const AVATARES = ['av_verao.jpg','av_inverno.jpg','av_outono.jpg','av_primavera.jpg'];
+const HEADERS = ['tempo_verao.jpg','tempo_inverno.jpg','tempo_outono.jpg','tempo_primavera.jpg'];
+const TEMPORADAS = ['summer','winter','autumn','spring'];
+const TEMPORADA_TXT = ['Verão','Inverno','Outono','Primavera'];
+let AVATARES_PNG = [];
+
+// Remove o fundo branco das fotos do Peba, deixando so o personagem (PNG transparente)
+function prepararAvatares() {
+  return Promise.all(AVATARES.map(function(src, i) {
+    return new Promise(function(resolve) {
+      var im = new Image();
+      im.onload = function() {
+        try {
+          var c = document.createElement('canvas');
+          c.width = im.naturalWidth; c.height = im.naturalHeight;
+          var ctx = c.getContext('2d');
+          ctx.drawImage(im, 0, 0);
+          var d = ctx.getImageData(0, 0, c.width, c.height);
+          var p = d.data;
+          for (var k = 0; k < p.length; k += 4) {
+            var mn = Math.min(p[k], p[k+1], p[k+2]);
+            var mx = Math.max(p[k], p[k+1], p[k+2]);
+            if (mn > 238 && mx - mn < 22) {
+              p[k+3] = 0;                       // branco puro -> transparente
+            } else if (mn > 200 && mx - mn < 26) {
+              p[k+3] = Math.round((238 - mn) / 38 * 255);  // borda suave
+            }
+          }
+          ctx.putImageData(d, 0, 0);
+          AVATARES_PNG[i] = c.toDataURL('image/png');
+        } catch (e) {
+          AVATARES_PNG[i] = src;
+        }
+        resolve();
+      };
+      im.onerror = function() { AVATARES_PNG[i] = src; resolve(); };
+      im.src = src;
+    });
+  }));
+}
+
+function aplicarAvatar(idx) {
+  var a = document.getElementById('avatarFloating');
+  var img = document.getElementById('avatarImg');
+  var imgHeader = document.getElementById('pebaHeaderImg');
+  var src = AVATARES_PNG[idx] || AVATARES[idx];
+  if (img) img.src = src;
+  if (imgHeader) imgHeader.src = src;
+  a.setAttribute('data-p', idx);
+  a.className = 'avatar-floating season-' + TEMPORADAS[idx];
+  var hb = document.getElementById('headerBanner');
+  if (hb && typeof HEADERS !== 'undefined') hb.src = HEADERS[idx];
+  var aa = document.getElementById('alertaAvatarImg');
+  if (aa) aa.src = (AVATARES_PNG[idx] || AVATARES[idx]);
+}
+
+// ============================================================
+//  BUSCA DE DADOS - NASA POWER
+// ============================================================
+async function buscarMensal(anoIni, anoFim) {
+  const url = `${API}/monthly/point?parameters=PRECTOTCORR,T2M&community=AG&longitude=${LON}&latitude=${LAT}&start=${anoIni}&end=${anoFim}&format=JSON`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('Falha na API (mensal): ' + r.status);
+  const j = await r.json();
+  const props = j.properties.parameter;
+  const out = {};
+  Object.keys(props.PRECTOTCORR).forEach(k => {
+    const ano = parseInt(k.substring(0,4));
+    const mes = parseInt(k.substring(4,6)) - 1;
+    if (mes < 0 || mes > 11) return; // descarta a chave anual (mês 13)
+    if (!out[ano]) out[ano] = { p: new Array(12).fill(0), t: new Array(12).fill(0) };
+    // NASA POWER monthly PRECTOTCORR vem em mm/dia -> converte para mm/mês
+    const pRaw = props.PRECTOTCORR[k];
+    const tRaw = props.T2M[k];
+    out[ano].p[mes] = (pRaw >= 0 ? pRaw : 0) * diasNoMes(ano, mes);
+    out[ano].t[mes] = (tRaw >= -900 ? tRaw : 0);
+  });
+  return out;
+}
+
+function diasNoMes(ano, mes) {
+  const d = [31,28,31,30,31,30,31,31,30,31,30,31];
+  if (mes === 1 && (ano % 4 === 0 && (ano % 100 !== 0 || ano % 400 === 0))) return 29;
+  return d[mes];
+}
+
+async function buscarDiario(ano) {
+  const url = `${API}/daily/point?parameters=PRECTOTCORR,T2M&community=AG&longitude=${LON}&latitude=${LAT}&start=${ano}0101&end=${ano}1231&format=JSON`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('Falha na API (diário): ' + r.status);
+  const j = await r.json();
+  const props = j.properties.parameter;
+  const meses = [];
+  for (let m = 0; m < 12; m++) meses.push([]);
+  Object.keys(props.PRECTOTCORR).forEach(k => {
+    const m = parseInt(k.substring(4,6)) - 1, d = parseInt(k.substring(6,8)) - 1;
+    if (m < 0 || m > 11 || d < 0) return;
+    const p = props.PRECTOTCORR[k], t = props.T2M[k];
+    meses[m][d] = { p: (p >= -900 ? p : 0), t: (t >= -900 ? t : 0) };
+  });
+  return meses;
+}
+
+// ============================================================
+//  INICIALIZACAO
+// ============================================================
+async function main() {
+  try {
+    const anos = [];
+    const anoMaxDados = Math.max(2026, new Date().getFullYear());
+    for (let a = 1981; a <= anoMaxDados; a++) anos.push(a);
+    const sel1 = document.getElementById('anoIni');
+    const sel2 = document.getElementById('anoFim');
+    const selA = document.getElementById('calAno');
+    anos.forEach(a => {
+      sel1.add(new Option(a, a)); sel2.add(new Option(a, a)); selA.add(new Option(a, a));
+    });
+    const anoPadrao = Math.max(2026, new Date().getFullYear());
+    sel1.value = 1981; sel2.value = anoPadrao; selA.value = anoPadrao;
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+
+    popularSelecaoLocal();
+    atualizarCabecalhoLocal();
+
+    const st = document.getElementById('status');
+    if (st) st.textContent = 'Selecione uma localidade ou use o GPS para carregar os dados.';
+    const dg = document.getElementById('diarioStatus');
+    if (dg) { dg.style.display = 'block'; dg.textContent = 'Selecione uma localidade para carregar o calendário diário.'; }
+    const now = document.getElementById('nowDesc');
+    if (now) now.textContent = 'Selecione uma localidade ou use o GPS para ver o tempo agora.';
+  } catch (e) {
+    document.getElementById('loading').innerHTML = 'Erro ao carregar dados: ' + e.message + '<br>Tente recarregar a página.';
+  }
+}
+async function carregarMensal() {
+  if (LAT == null || LON == null) { return; }
+  const ini = parseInt(document.getElementById('anoIni').value);
+  const fim = parseInt(document.getElementById('anoFim').value);
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('loading').textContent = 'Carregando dados (' + (fim-ini+1) + ' anos)...';
+  dadosMensais = await buscarMensal(ini, fim);
+  document.getElementById('loading').style.display = 'none';
+  atualizarGraficos();
+  atualizarStats();
+  atualizarEventos();
+  calcularLimiaresExtremos();
+  if (window._ultimoTempoAtual) avaliarAlertaClimatico(window._ultimoTempoAtual);
+}
+
+async function carregarDiario() {
+  if (LAT == null || LON == null) {
+    const status = document.getElementById('diarioStatus');
+    const cont = document.getElementById('diarioConteudo');
+    if (status) { status.style.display = 'block'; status.textContent = 'Selecione uma localidade para carregar o calendário diário.'; }
+    if (cont) cont.style.display = 'none';
+    return;
+  }
+  const ano = parseInt(document.getElementById('calAno').value);
+  anoCal = ano; mesCal = 0;
+  const status = document.getElementById('diarioStatus');
+  const cont = document.getElementById('diarioConteudo');
+  status.style.display = 'block';
+  status.textContent = 'Carregando dados diários de ' + ano + '...';
+  cont.style.display = 'none';
+  try {
+    dadosDiarios = { [ano]: await buscarDiario(ano) };
+    status.textContent = 'Dados de ' + ano + ' carregados.';
+    renderCalendario();
+    atualizarTabelaDias();
+  } catch (e) {
+    status.textContent = 'Erro ao carregar dados diários: ' + e.message;
+  }
+}
+function trocarAnoCal() {
+  const ano = parseInt(document.getElementById('calAno').value);
+  anoCal = ano; mesCal = 0;
+  if (!dadosDiarios || !dadosDiarios[ano]) carregarDiario();
+  else { renderCalendario(); atualizarTabelaDias(); }
+}
+
+// ============================================================
+//  ESTATISTICAS
+// ============================================================
+function atualizarStats() {
+  const anos = Object.keys(dadosMensais).map(Number).sort((a,b)=>a-b);
+  let pTot = 0, tSoma = 0, n = 0, pMax = 0, anoMax = 0, pMin = Infinity, anoMin = 0, tMax = -Infinity, anoTMax = 0;
+  anos.forEach(a => {
+    const p = dadosMensais[a].p.reduce((x,y)=>x+y,0);
+    const t = dadosMensais[a].t.reduce((x,y)=>x+y,0)/12;
+    pTot += p; tSoma += t; n++;
+    if (p > pMax) { pMax = p; anoMax = a; }
+    if (p < pMin) { pMin = p; anoMin = a; }
+    if (t > tMax) { tMax = t; anoTMax = a; }
+  });
+  const mediaP = pTot/n, mediaT = tSoma/n;
+  document.getElementById('statsInline').innerHTML = `
+    <span><b>${mediaP.toFixed(0)} mm/ano</b> precipitação média</span>
+    <span><b>${mediaT.toFixed(1)}°C</b> temperatura média</span>
+    <span><b>${anoMax}</b> mais chuvoso (${pMax.toFixed(0)}mm)</span>
+    <span><b>${anoMin}</b> mais seco (${pMin.toFixed(0)}mm)</span>
+    <span><b>${anoTMax}</b> mais quente (${tMax.toFixed(1)}°C)</span>
+    <span><b>${n} anos</b> de dados</span>`;
+}
+
+// ============================================================
+//  EVENTOS CLIMATICOS EXTREMOS
+// ============================================================
+function atualizarEventos() {
+  if (!dadosMensais) return;
+  const anos = Object.keys(dadosMensais).map(Number).sort((a,b)=>a-b);
+
+  const totais = anos.map(a => ({
+    a,
+    p: dadosMensais[a].p.reduce((x,y)=>x+y,0),
+    t: dadosMensais[a].t.reduce((x,y)=>x+y,0)/12
+  }));
+
+  const maisChuvoso = totais.reduce((m,x)=>x.p>m.p?x:m);
+  const maisSeco    = totais.reduce((m,x)=>x.p<m.p?x:m);
+  const maisQuente  = totais.reduce((m,x)=>x.t>m.t?x:m);
+  const maisFrio    = totais.reduce((m,x)=>x.t<m.t?x:m);
+
+  // extremos mensais absolutos
+  let recPrecip = {p:-1}, recSeco = {p:Infinity}, recQuente = {t:-99}, recFrio = {t:99};
+  anos.forEach(a => {
+    for (let m=0;m<12;m++) {
+      const p = dadosMensais[a].p[m], t = dadosMensais[a].t[m];
+      if (p > recPrecip.p) recPrecip = {a, m, p};
+      if (p < recSeco.p)    recSeco    = {a, m, p};
+      if (t > recQuente.t)  recQuente  = {a, m, t};
+      if (t < recFrio.t)    recFrio    = {a, m, t};
+    }
+  });
+
+  // anos com eventos extremos
+  const chuvassimos = totais.filter(x=>x.p>=2000).sort((a,b)=>b.p-a.p);
+  const secos       = totais.filter(x=>x.p<=700).sort((a,b)=>a.p-b.p);
+  const caloricos  = totais.filter(x=>x.t>=27.0).sort((a,b)=>b.t-a.t);
+  const frios      = totais.filter(x=>x.t<=25.5).sort((a,b)=>a.t-b.t);
+
+  // sequência seca mais longa (anos consecutivos < 800mm)
+  let seqAtual = 1, seqMax = 1, seqIni = totais[0].a, seqFim = totais[0].a, seqMelhorIni = totais[0].a, seqMelhorFim = totais[0].a;
+  for (let i=1;i<totais.length;i++) {
+    if (totais[i].p < 800 && totais[i-1].p < 800) { seqAtual++; seqFim = totais[i].a; }
+    else { seqAtual = 1; seqIni = totais[i].a; seqFim = totais[i].a; }
+    if (seqAtual > seqMax) { seqMax = seqAtual; seqMelhorIni = seqIni; seqMelhorFim = seqFim; }
+  }
+
+  const mediaP = totais.reduce((s,x)=>s+x.p,0)/totais.length;
+
+  document.getElementById('statsExt').innerHTML = `
+    <div class="stat"><div class="value">${maisChuvoso.a}</div><div class="label">Ano mais chuvoso (${maisChuvoso.p.toFixed(0)} mm)</div></div>
+    <div class="stat"><div class="value">${maisSeco.a}</div><div class="label">Ano mais seco (${maisSeco.p.toFixed(0)} mm)</div></div>
+    <div class="stat"><div class="value">${maisQuente.a}</div><div class="label">Ano mais quente (${maisQuente.t.toFixed(1)}°C)</div></div>
+    <div class="stat"><div class="value">${maisFrio.a}</div><div class="label">Ano mais frio (${maisFrio.t.toFixed(1)}°C)</div></div>
+    <div class="stat"><div class="value">${recPrecip.p.toFixed(0)} mm</div><div class="label">Maior chuva em 1 mês (${MESES_LONGOS[recPrecip.m]}/${recPrecip.a})</div></div>
+    <div class="stat"><div class="value">${recQuente.t.toFixed(1)}°C</div><div class="label">Mês mais quente (${MESES_LONGOS[recQuente.m]}/${recQuente.a})</div></div>
+    <div class="stat"><div class="value">${recFrio.t.toFixed(1)}°C</div><div class="label">Mês mais frio (${MESES_LONGOS[recFrio.m]}/${recFrio.a})</div></div>
+    <div class="stat"><div class="value">${seqMax} anos</div><div class="label">Maior sequência seca (${seqMelhorIni}-${seqMelhorFim})</div></div>`;
+
+  document.getElementById('resumoExt').innerHTML = `
+    <div class="destaque">
+      <strong>Eventos extremos registrados em ${localidadeAtual().nome} / ${localidadeAtual().cidade} (${localidadeAtual().lat.toFixed(3)}°, ${localidadeAtual().lon.toFixed(3)}°) — 1981 a 2025:</strong><br>
+      • <strong>${chuvassimos.length}</strong> ano(s) com precipitação extrema (≥ 2.000 mm): ${chuvassimos.map(x=>x.a+' ('+x.p.toFixed(0)+'mm)').join(', ') || '—'}<br>
+      • <strong>${secos.length}</strong> ano(s) com seca extrema (≤ 700 mm): ${secos.map(x=>x.a+' ('+x.p.toFixed(0)+'mm)').join(', ') || '—'}<br>
+      • <strong>${caloricos.length}</strong> ano(s) muito quentes (≥ 27,0°C de média): ${caloricos.map(x=>x.a).join(', ') || '—'}<br>
+      • <strong>${frios.length}</strong> ano(s) frios (≤ 25,5°C de média): ${frios.map(x=>x.a).join(', ') || '—'}<br>
+      • Mês <strong>mais seco</strong>: ${MESES_LONGOS[recSeco.m]} de ${recSeco.a} — apenas ${recSeco.p.toFixed(1)} mm<br>
+      • Média histórica: <strong>${mediaP.toFixed(0)} mm/ano</strong> · Período chuvoso (Nov-Abr) concentra a maior parte da chuva
+    </div>`;
+
+  // Tabelas de ranking/recordes removidas
+}
+
+// ============================================================
+//  GRAFICOS
+// ============================================================
+function mudarVisao(v) {
+  visaoAtual = v;
+  ['anual','mensal','estacoes'].forEach(x => {
+    document.getElementById('btn'+x.charAt(0).toUpperCase()+x.slice(1)).className = (x===v?'active':'');
+  });
+  atualizarGraficos();
+}
+
+function atualizarGraficos() {
+  if (!dadosMensais) return;
+  const anos = Object.keys(dadosMensais).map(Number).sort((a,b)=>a-b);
+
+  if (grafico1) grafico1.destroy();
+  const ctx1 = document.getElementById('grafico1').getContext('2d');
+
+  if (visaoAtual === 'anual') {
+    const pTot = anos.map(a => dadosMensais[a].p.reduce((x,y)=>x+y,0));
+    const tMed = anos.map(a => dadosMensais[a].t.reduce((x,y)=>x+y,0)/12);
+    grafico1 = new Chart(ctx1, {
+      data: { labels: anos, datasets: [
+        { type:'bar', label:'Precipitação anual (mm)', data: pTot, backgroundColor:'rgba(41,128,185,.65)', yAxisID:'y' },
+        { type:'line', label:'Temperatura média (°C)', data: tMed, borderColor:'#e74c3c', backgroundColor:'#e74c3c', yAxisID:'y1', tension:.3 }
+      ]},
+      options: { responsive:true, scales:{ y:{beginAtZero:true,title:{display:true,text:'mm'}}, y1:{position:'right',title:{display:true,text:'°C'}} } }
+    });
+  } else if (visaoAtual === 'mensal') {
+    const medias = MESES.map((_,m) => {
+      const v = anos.map(a => dadosMensais[a].p[m]).filter(x=>x!=null);
+      return v.reduce((x,y)=>x+y,0)/v.length;
+    });
+    grafico1 = new Chart(ctx1, {
+      type:'bar',
+      data:{ labels:MESES_LONGOS, datasets:[{ label:'Precipitação média mensal (mm)', data:medias, backgroundColor:'rgba(41,128,185,.65)' }]},
+      options:{ responsive:true, scales:{ y:{beginAtZero:true} } }
+    });
+  } else {
+    const estacoes = [
+      { n:'Verão (DJF)', m:[11,0,1], c:'#f39c12' },
+      { n:'Outono (MAM)', m:[2,3,4], c:'#e67e22' },
+      { n:'Inverno (JJA)', m:[5,6,7], c:'#2874a6' },
+      { n:'Primavera (SON)', m:[8,9,10], c:'#27ae60' }
+    ];
+    grafico1 = new Chart(ctx1, {
+      type:'bar',
+      data:{ labels: estacoes.map(e=>e.n), datasets: estacoes.map(e => ({
+        label:'Precipitação média (mm)', data: anos.map(a => e.m.reduce((s,m)=>s+(dadosMensais[a].p[m]||0),0)/e.m.length),
+        backgroundColor: e.c
+      }))},
+      options:{ responsive:true, scales:{ y:{beginAtZero:true} } }
+    });
+  }
+
+  // Grafico 2 - temperatura x precipitação mensal (média do período)
+  if (grafico2) grafico2.destroy();
+  const ctx2 = document.getElementById('grafico2').getContext('2d');
+  const mediaP = MESES.map((_,m) => { const v = anos.map(a=>dadosMensais[a].p[m]).filter(x=>x!=null); return v.reduce((x,y)=>x+y,0)/v.length; });
+  const mediaT = MESES.map((_,m) => { const v = anos.map(a=>dadosMensais[a].t[m]).filter(x=>x!=null); return v.reduce((x,y)=>x+y,0)/v.length; });
+  grafico2 = new Chart(ctx2, {
+    data:{ labels:MESES_LONGOS, datasets:[
+      { type:'bar', label:'Precipitação média (mm)', data:mediaP, backgroundColor:'rgba(52,152,219,.6)', yAxisID:'y' },
+      { type:'line', label:'Temperatura média (°C)', data:mediaT, borderColor:'#c0392b', backgroundColor:'#c0392b', yAxisID:'y1', tension:.35 }
+    ]},
+    options:{ responsive:true, scales:{ y:{beginAtZero:true,title:{display:true,text:'mm'}}, y1:{position:'right',title:{display:true,text:'°C'}} } }
+  });
+
+  // Tabela "Médias mensais do período" removida
+}
+
+// ============================================================
+//  SELECAO DE LOCALIDADE
+// ============================================================
+function popularSelecaoLocal() {
+  const sel = document.getElementById('selLocal');
+  sel.innerHTML = '';
+  sel.add(new Option('Selecione uma localidade...', ''));
+  LOCALIDADES.forEach((L, i) => {
+    sel.add(new Option(L.nome + ' — ' + L.cidade + ' (' + L.lat.toFixed(3) + ', ' + L.lon.toFixed(3) + ')', String(i)));
+  });
+  sel.add(new Option('Minha localização (GPS do celular)', 'gps'));
+  sel.value = '';
+}
+
+const PERFIS_CLIMA_REGIAO = {
+  'Balsas-MA': {
+    estacao: 'INMET Balsas (OMM 82768) — referência regional',
+    html: '<strong>Clima da região (Balsas-MA):</strong> Tropical com estação seca (Aw/Köppen), típico do sul do Maranhão. Chuvas concentradas em <b>nov–abr</b> e período mais seco em <b>mai–set</b>. Referência INMET Balsas: precipitação anual ~1.195 mm, temperatura média ~26,7°C, umidade ~68%. <b>Os gráficos e estatísticas abaixo usam dados NASA POWER/MERRA-2 (1981–2025) específicos das coordenadas da localidade selecionada.</b>'
+  },
+  'Riachão-MA': {
+    estacao: 'Referência regional: sul do Maranhão (INMET Balsas, OMM 82768)',
+    html: '<strong>Clima da região (Riachão-MA):</strong> Tropical sazonal (Aw), com estação chuvosa concentrada principalmente em <b>nov–abr</b> e estiagem mais acentuada no meio do ano. As condições variam conforme o ponto/localidade. <b>Os gráficos e estatísticas abaixo usam dados NASA POWER/MERRA-2 (1981–2025) específicos das coordenadas da localidade selecionada.</b>'
+  },
+  'Campos Lindos-TO': {
+    estacao: 'Referência regional: nordeste do Tocantins / transição Cerrado',
+    html: '<strong>Clima da região (Campos Lindos-TO):</strong> Tropical sazonal (Aw), com chuvas concentradas em <b>nov–abr</b> e período seco em parte do outono/inverno. No Cerrado tocantinense, pancadas e variações locais são comuns. <b>Os gráficos e estatísticas abaixo usam dados NASA POWER/MERRA-2 (1981–2025) específicos das coordenadas da localidade selecionada.</b>'
+  }
+};
+
+function atualizarPerfilRegiao() {
+  const L = localidadeAtual();
+  const el = document.getElementById('infoClimaRegiao');
+  const est = document.getElementById('infoEstacao');
+  if (!L || L.lat == null) {
+    if (est) est.textContent = 'Selecione uma localidade';
+    if (el) el.innerHTML = '<strong>Clima da região:</strong> Selecione uma localidade para ver o perfil climático regional e os dados específicos do ponto (NASA POWER 1981–2026).';
+    return;
+  }
+  const perfil = PERFIS_CLIMA_REGIAO[L.cidade] || {
+    estacao: 'Dados por coordenada (NASA POWER/MERRA-2)',
+    html: '<strong>Clima da localidade/região:</strong> ' + (L.cidade ? (L.cidade + '. ') : '') + 'Os valores apresentados são calculados com dados NASA POWER/MERRA-2 (1981–2025) para as coordenadas selecionadas, refletindo o comportamento climático específico deste ponto.'
+  };
+  if (est) est.textContent = perfil.estacao;
+  if (el) el.innerHTML = perfil.html;
+}
+
+
+function atualizarCabecalhoLocal() {
+  const L = localidadeAtual();
+  const tem = (L && L.lat != null && L.lon != null);
+  document.getElementById('localCoords').textContent = tem ? (L.lat.toFixed(4) + ', ' + L.lon.toFixed(4) + '  |  Raio ~50 km (MERRA-2)') : 'Selecione uma localidade ou use GPS';
+  const lm = document.getElementById('linkMapa');
+  if (lm) { lm.href = (L && L.link && L.link !== '#') ? L.link : '#'; lm.style.visibility = tem ? 'visible' : 'hidden'; }
+  const info = document.getElementById('infoLocal');
+  if (info) info.textContent = tem ? (L.nome + (L.cidade ? ', ' + L.cidade : '') + ' (' + Math.abs(L.lat).toFixed(3) + '°S, ' + Math.abs(L.lon).toFixed(3) + '°O)') : 'Selecione uma localidade ou use GPS';
+  const p = document.querySelector('.header p');
+  if (p) p.textContent = tem ? (L.nome + (L.cidade ? ', ' + L.cidade : '') + '  |  Clima e Precipitação') : 'Balsas-MA e Região  |  Clima e Precipitação';
+  const g = document.querySelector('.gps-btn');
+  if (g && L && L.link && L.link !== '#') g.href = L.link;
+  atualizarPerfilRegiao();
+}
+function trocarLocal() {
+  const sel = document.getElementById('selLocal');
+  if (sel.value === 'gps') { usarGPS(); return; }
+  if (sel.value === '') {
+    LOCAL_ATUAL = -1;
+    LOCAL_GPS = null;
+    USANDO_GPS = false;
+    LAT = null; LON = null;
+    dadosMensais = null; dadosDiarios = null;
+    atualizarCabecalhoLocal();
+    const st = document.getElementById('status');
+    if (st) st.textContent = 'Selecione uma localidade ou use o GPS para carregar os dados.';
+    return;
+  }
+  LOCAL_ATUAL = parseInt(sel.value);
+  LOCAL_GPS = null;
+  USANDO_GPS = false;
+  const L = LOCALIDADES[LOCAL_ATUAL];
+  LAT = L.lat; LON = L.lon;
+  dadosDiarios = null;
+  atualizarCabecalhoLocal();
+  carregarMensal();
+  carregarDiario();
+  carregarTempoAgora();
+}
+
+// ============================================================
+//  TEMPO AGORA (tempo real) + GPS DO CELULAR
+// ============================================================
+const CODIGOS_TEMPO = {
+  0:'☀️ Céu limpo', 1:'🌤️ Predominantemente limpo', 2:'⛅ Parcialmente nublado', 3:'☁️ Encoberto',
+  45:'🌫️ Névoa', 48:'🌫️ Geada', 51:'🌦️ Garoa fraca', 53:'🌦️ Garoa', 55:'🌦️ Garoa forte',
+  56:'🌧️ Garoa gelada', 57:'🌧️ Garoa gelada forte', 61:'🌦️ Chuva fraca', 63:'🌧️ Chuva',
+  65:'🌧️ Chuva forte', 66:'🌧️ Chuva gelada', 67:'🌧️ Chuva gelada forte',
+  71:'🌨️ Neve fraca', 73:'🌨️ Neve', 75:'❄️ Neve forte', 77:'🌨️ Grãos de neve',
+  80:'🌦️ Pancadas de chuva', 81:'🌧️ Pancadas fortes', 82:'⛈️ Pancadas muito fortes',
+  85:'🌨️ Pancadas de neve', 86:'❄️ Pancadas de neve fortes',
+  95:'⛈️ Trovoada', 96:'⛈️ Trovoada com granizo', 99:'⛈️ Trovoada forte com granizo'
+};
+
+async function carregarTempoAgora() {
+  if (LAT == null || LON == null) {
+    const nd = document.getElementById('nowDesc'); if (nd) nd.textContent = 'Selecione uma localidade ou use o GPS para ver o tempo agora.';
+    return;
+  }
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}`
+    + `&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,cloud_cover`
+    + `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&forecast_days=1&timezone=auto`;
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    const cur = j.current, d = j.daily;
+    const desc = (typeof CODIGOS_TEMPO !== 'undefined' && CODIGOS_TEMPO[cur.weather_code]) ? CODIGOS_TEMPO[cur.weather_code] : ('Código ' + cur.weather_code);
+    const emoji = Array.from(desc)[0] || '🌤️';
+    document.getElementById('nowEmoji').textContent = emoji;
+    document.getElementById('nowTemp').textContent = cur.temperature_2m.toFixed(1) + '°C';
+    document.getElementById('nowDesc').textContent = desc.replace(/^\S+\s*/, '');
+    document.getElementById('nowSens').textContent = cur.apparent_temperature.toFixed(1) + '°C';
+    document.getElementById('nowUmi').textContent = cur.relative_humidity_2m + '%';
+    document.getElementById('nowPrec').textContent = cur.precipitation.toFixed(1) + ' mm';
+    document.getElementById('nowVento').textContent = cur.wind_speed_10m.toFixed(0) + ' km/h';
+    document.getElementById('nowMax').textContent = d.temperature_2m_max[0].toFixed(1) + '°C';
+    document.getElementById('nowMin').textContent = d.temperature_2m_min[0].toFixed(1) + '°C';
+    document.getElementById('nowPlace').textContent = localidadeAtual().nome + ', ' + localidadeAtual().cidade;
+    document.getElementById('nowLocal').textContent = LAT.toFixed(4) + ', ' + LON.toFixed(4);
+    document.getElementById('nowFonte').textContent = 'Atualizado em ' + new Date().toLocaleTimeString('pt-BR') + ' — Fonte: Open-Meteo (ECMWF) em tempo real.';
+    window._ultimoTempoAtual = j;
+    if (typeof avaliarAlertaClimatico === 'function') avaliarAlertaClimatico(j);
+  } catch (e) {
+    document.getElementById('nowDesc').textContent = 'Erro ao carregar: ' + e.message;
+  }
+}
+function usarGPS() {
+  if (!navigator.geolocation) {
+    alert('GPS não disponível neste navegador.');
+    return;
+  }
+  const btn = document.getElementById('btnGPS');
+  btn.textContent = '📍 Obtendo localização...';
+  btn.disabled = true;
+  navigator.geolocation.getCurrentPosition(async pos => {
+    LAT = pos.coords.latitude;
+    LON = pos.coords.longitude;
+    USANDO_GPS = true;
+    LOCAL_GPS = { nome: 'Minha localização', cidade: 'via GPS', lat: LAT, lon: LON,
+                  link: `https://www.google.com/maps/search/${LAT},${LON}` };
+    btn.textContent = '📍 Usando minha localização';
+    btn.disabled = false;
+    document.getElementById('selLocal').value = 'gps';
+    atualizarCabecalhoLocal();
+    await carregarTempoAgora();
+  }, err => {
+    btn.textContent = '📍 Usar minha localização (GPS)';
+    btn.disabled = false;
+    alert('Não foi possível obter o GPS:\n' + err.message +
+      '\n\nVerifique se a localização está ativada no celular e se o navegador tem permissão.');
+  }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+}
+
+// ============================================================
+//  CALENDARIO CLIMATICO
+// ============================================================
+function mudarMes(d) {
+  mesCal += d;
+  if (mesCal < 0) { mesCal = 11; anoCal--; }
+  if (mesCal > 11) { mesCal = 0; anoCal++; }
+  const sel = document.getElementById('calAno');
+  if (parseInt(sel.value) !== anoCal) {
+    sel.value = anoCal;
+    if (Object.keys(dadosDiarios||{}).indexOf(String(anoCal)) === -1) {
+      dadosDiarios = null;
+      carregarDiario();
+      return;
+    }
+  }
+  renderCalendario();
+  atualizarTabelaDias();
+}
+
+function renderCalendario() {
+  const grade = document.getElementById('calGrade');
+  grade.innerHTML = '';
+  ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].forEach(d => {
+    const h = document.createElement('div');
+    h.className = 'cal-header'; h.textContent = d; grade.appendChild(h);
+  });
+  document.getElementById('calTitulo').textContent = MESES_LONGOS[mesCal] + ' ' + anoCal;
+
+  const dias = (dadosDiarios && dadosDiarios[anoCal]) ? dadosDiarios[anoCal][mesCal] : null;
+  const primeiro = new Date(anoCal, mesCal, 1).getDay();
+  for (let i = 0; i < primeiro; i++) {
+    const d = document.createElement('div'); d.className = 'cal-day empty'; grade.appendChild(d);
+  }
+  if (!dias) return;
+  const total = dias.filter(Boolean).length;
+  for (let d = 0; d < total; d++) {
+    const info = dias[d];
+    const div = document.createElement('div');
+    const p = info ? info.p : 0;
+    const t = info ? info.t : 0;
+    div.className = 'cal-day ' + (p >= 10 ? 'heavy' : (p > 0.2 ? 'rainy' : 'dry'));
+    div.innerHTML = `<div class="day-num">${d+1}</div><div class="temp">${t.toFixed(1)}°C</div><div class="precip">${p > 0 ? p.toFixed(1)+'mm' : ''}</div>`;
+    grade.appendChild(div);
+  }
+}
+
+function atualizarTabelaDias() {
+  const cont = document.getElementById('diarioConteudo');
+  if (!dadosDiarios || !dadosDiarios[anoCal]) { if (cont) cont.style.display = 'none'; return; }
+  if (cont) cont.style.display = 'block';
+  const alvo = document.getElementById('calendarioSaberCena');
+  if (!alvo) return;
+  // mostrar cena do saber quando houver dia especial no mês/ano em exibição
+  const especiais = [];
+  function addDia(dia, mes, cenaId, texto) { if (mes === (mesCal+1)) especiais.push({dia, cenaId, texto}); }
+  addDia(19, 3, 'pedagua', '19/03 - Dia de São José');
+  addDia(24, 6, 'manga', '24/06 - São João');
+  addDia(8, 12, 'trovao', '08/12 - Nossa Senhora da Conceição');
+  addDia(13, 12, 'lua', '13/12 - Santa Luzia (experiência do sal)');
+  if (!especiais.length) {
+    alvo.innerHTML = '<div class="note">Consulte em "Saberes Populares" um dia específico para ver a cena e o saber do dia.</div>';
+    return;
+  }
+  const item = especiais[0];
+  alvo.innerHTML = '<div style="margin-bottom:8px;font-weight:700;color:#154360;">Dia especial neste mês: ' + item.texto + '</div>' +
+    '<div class="saber-palco" style="max-width:420px;margin:0 auto;"><div class="saber-cena" id="saberCenaCal"></div><div class="saber-legenda" id="saberLegendaCal"></div></div>';
+  try { mostrarCenaSaberEm(item.cenaId, 'saberCenaCal', 'saberLegendaCal', item.texto); } catch(e) {}
+}
+
+
+// ============================================================
+//  AVATAR
+// ============================================================
+function mudarFenotipo() {
+  const a = document.getElementById('avatarFloating');
+  let idx = parseInt(a.getAttribute('data-p') || '0') + 1;
+  if (idx > 3) idx = 0;
+  aplicarAvatar(idx);
+  const dica = document.getElementById('avatarDica');
+  dica.textContent = TEMPORADA_TXT[idx] + ' (clique para trocar)';
+  dica.style.display = 'block';
+  clearTimeout(window._dicaT);
+  window._dicaT = setTimeout(() => dica.style.display = 'none', 2500);
+}
+
+
+function consultarSaberPopular() {
+  const inp = document.getElementById('dataSaber');
+  const out = document.getElementById('resultadoSaber');
+  const cenaWrap = document.getElementById('saberCenaConsulta');
+  if (!inp || !out) return;
+  const v = inp.value;
+  if (!v) { out.innerHTML = 'Selecione uma data para consultar.'; if (cenaWrap) cenaWrap.innerHTML = ''; return; }
+  const d = new Date(v + 'T12:00:00');
+  const dia = d.getDate();
+  const mes = d.getMonth() + 1;
+  const mmdd = String(mes).padStart(2,'0') + '-' + String(dia).padStart(2,'0');
+  const nomesMes = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  let msgs = [];
+  let cenaId = null;
+  let extraMsg = '';
+  if (mmdd === '03-19') { msgs.push('<b>19 de março — Dia de São José:</b> se chover, o povo diz que “o inverno tá confirmado”; se fizer sol forte, há preocupação com as lavouras (ex.: milho).'); cenaId = 'pedagua'; extraMsg = 'São José (19/03)'; }
+  if (mmdd === '12-13') { msgs.push('<b>13 de dezembro — Santa Luzia:</b> tradição das pedrinhas de sal para indicar quais meses terão mais chuva.'); cenaId = 'lua'; extraMsg = 'Santa Luzia (13/12)'; }
+  if (mmdd === '06-24') { msgs.push('<b>24 de junho — São João:</b> em junho costuma ser seca; se chover, é vista como “chuva de despedida do inverno” e sinal de bom ano seguinte.'); cenaId = 'manga'; extraMsg = 'São João (24/06)'; }
+  if (mmdd === '12-08') { msgs.push('<b>8 de dezembro — Nossa Senhora da Conceição:</b> em muitas cidades do Maranhão, se trovejar nesse dia, acredita-se que o inverno vem cedo.'); cenaId = 'trovao'; extraMsg = 'N. Sra. da Conceição (08/12)'; }
+  // dias similares/associados aos saberes
+  if (!cenaId && (mes === 10 || mes === 11)) { msgs.push('<b>Outubro/Novembro:</b> período associado à “chuva de caju” e também a chuvas de trovão.'); cenaId = 'trovao'; }
+  if (!msgs.length) msgs.push('Não há uma data especial tradicional cadastrada para ' + dia + ' de ' + nomesMes[mes-1] + '. Consulte as datas e mitos mais falados abaixo.');
+  out.innerHTML = msgs.map(m => '<div style="margin:6px 0;">• ' + m + '</div>').join('');
+  if (cenaWrap) {
+    if (cenaId) {
+      cenaWrap.innerHTML = '<div class="saber-palco" style="max-width:420px;margin:0 auto;"><div class="saber-cena" id="saberCenaRes"></div><div class="saber-legenda" id="saberLegendaRes"></div></div>';
+      try { mostrarCenaSaberEm(cenaId, 'saberCenaRes', 'saberLegendaRes', extraMsg); } catch(e) {}
+    } else {
+      cenaWrap.innerHTML = '';
+    }
+  }
+}
+
+
+const SABERES_CENAS = [
+  { id:'pedagua', titulo:'Pé d’água / Toró', legenda:'Pé d’água: nuvem escura e chuva forte à frente — pode alagar rápido.' },
+  { id:'manga', titulo:'Chuva de manga', legenda:'Chuva de manga: chuva fraquinha caindo, o avatar debaixo do pé de manga.' },
+  { id:'trovao', titulo:'Chuva de trovão', legenda:'Chuva de trovão: raios na nuvem, o avatar correndo e raio caindo perto.' },
+  { id:'cupim', titulo:'Cupins voando', legenda:'Cupins voando: o avatar observando — chuva em 2 dias.' },
+  { id:'sapo', titulo:'Sapo cantando', legenda:'Sapo cantando no chão: o avatar observando — vai cair um toró.' },
+  { id:'lua', titulo:'Lua com halo', legenda:'Lua com círculo ao redor: o avatar olhando para ela — chuva em 3 dias.' },
+];
+
+function renderOpcoesSaberes() {
+  const wrap = document.getElementById('saberesOpcoes');
+  if (!wrap) return;
+  wrap.innerHTML = SABERES_CENAS.map(s => `<button type="button" data-id="${s.id}" onclick="mostrarCenaSaber('${s.id}')">${s.titulo}</button>`).join('');
+}
+
+function avatarCenaSrc() {
+  try { return avatarAtualSrc(); } catch(e) {}
+  const a = document.getElementById('avatarFloating');
+  const idx = a ? parseInt(a.getAttribute('data-p') || '1') : 1;
+  return (typeof AVATARES_PNG!=='undefined' && AVATARES_PNG[idx]) ? AVATARES_PNG[idx] : (AVATARES[idx] || 'av_inverno.jpg');
+}
+
+
+function mostrarCenaSaberEm(id, cenaIdEl, legIdEl, extraMsg) {
+  const cena = SABERES_CENAS.find(x => x.id === id) || SABERES_CENAS[0];
+  const palco = document.getElementById(cenaIdEl);
+  const leg = document.getElementById(legIdEl);
+  if (!palco || !leg) return;
+  const avBase = `<img class="saber-avatar" src="${avatarCenaSrc()}" alt="Avatar">`;
+  let extra = '';
+  let nota = cena.titulo || '';
+  if (cena.id === 'pedagua') {
+    nota = 'Pé d’água / Toró';
+    extra = `<div class="saber-el" style="top:2px; left:14px; font-size:74px; filter:drop-shadow(0 2px 2px rgba(0,0,0,.3));">☁️</div><div class="saber-el nuvem" style="top:28px; left:22px; transform:scale(1.08);"></div><div class="saber-el" style="top:104px; left:14px; font-size:12px; background:rgba(255,255,255,.9); padding:4px 7px; border-radius:8px; font-weight:700; color:#1b4f72; z-index:4;">Nuvem escura</div>${Array.from({length:18}).map((_,i)=>`<div class="saber-el gota anim-cair" style="top:${88 + (i%5)*10}px; left:${30 + i*19}px; animation-delay:${(i%7)*0.1}s; height:${12+(i%3)*5}px;"></div>`).join('')}`;
+  } else if (cena.id === 'manga') {
+    nota = 'Chuva de manga';
+    extra = `<div class="saber-el" style="top:30px; left:6px; font-size:90px;">🌳</div><div class="saber-el" style="top:54px; left:54px; font-size:32px;">🥭</div><div class="saber-el" style="top:6px; right:14px; font-size:58px; opacity:.95;">🌦️</div>${Array.from({length:12}).map((_,i)=>`<div class="saber-el gota anim-cair" style="top:${80 + (i%4)*13}px; right:${22 + i*15}px; animation-delay:${(i%6)*0.12}s; opacity:.55; height:8px;"></div>`).join('')}`;
+  } else if (cena.id === 'trovao') {
+    nota = 'Chuva de trovão';
+    extra = `<div class="saber-el" style="top:0px; left:78px; font-size:78px;">🌩️</div><div class="saber-el nuvem" style="top:24px; left:86px; transform:scale(1.12);"></div><div class="saber-el raio" style="top:76px; left:148px;"></div><div class="saber-el raio" style="top:98px; right:66px; transform:scale(.85) skewX(-10deg);"></div><div class="saber-el" style="bottom:42px; right:50px; font-size:30px; z-index:4;">⚡</div><div class="saber-el" style="top:124px; left:96px; font-size:12px; background:rgba(255,255,255,.9); padding:4px 7px; border-radius:8px; font-weight:700; color:#1b4f72; z-index:4;">Raios na nuvem</div>`;
+  } else if (cena.id === 'cupim') {
+    nota = 'Sinal observado';
+    extra = `${Array.from({length:12}).map((_,i)=>`<div class="saber-el anim-voar" style="top:${30 + (i%4)*24}px; left:${18 + i*28}px; animation-delay:${(i%6)*0.16}s; font-size:${22 + (i%3)*3}px;">🐜</div>`).join('')}<div class="saber-el" style="top:10px; left:10px; font-size:14px; background:rgba(255,255,255,.92); padding:5px 8px; border-radius:8px; font-weight:800; color:#1b4f72; z-index:4;">🪲 Cupins voando</div>`;
+  } else if (cena.id === 'sapo') {
+    nota = 'Sinal observado';
+    extra = `<div class="saber-el" style="bottom:14px; left:28px; font-size:62px; z-index:4;">🐸</div><div class="saber-el" style="bottom:8px; left:96px; font-size:13px; background:rgba(255,255,255,.92); padding:4px 8px; border-radius:8px; font-weight:800; color:#1b4f72; z-index:4;">Sapo cantando</div><div class="saber-el" style="bottom:66px; left:92px; font-size:22px;">🎵</div><div class="saber-el" style="top:10px; left:30px; font-size:54px; opacity:.9;">☁️</div>`;
+  } else if (cena.id === 'lua') {
+    nota = 'Sinal observado';
+    extra = `<div class="saber-el halo" style="top:12px; right:20px; width:126px; height:126px; border-width:5px;"></div><div class="saber-el lua" style="top:32px; right:40px; width:86px; height:86px;"></div><div class="saber-el" style="top:44px; right:54px; font-size:56px; filter:drop-shadow(0 0 4px rgba(255,255,255,.5));">🌙</div><div class="saber-el" style="top:146px; right:14px; font-size:13px; background:rgba(255,255,255,.92); padding:5px 8px; border-radius:8px; font-weight:800; color:#1b4f72; z-index:4;">Lua com círculo</div>`;
+  }
+  const correrClass = (cena.id === 'trovao') ? 'anim-correr' : '';
+  palco.innerHTML = `<div class="nota-cena">${nota}</div>` + extra + avBase.replace('class="saber-avatar"', `class="saber-avatar ${correrClass}"`);
+  leg.textContent = cena.legenda + (extraMsg ? ' (' + extraMsg + ')' : '');
+}
+
+function mostrarCenaSaber(id) {
+  const cena = SABERES_CENAS.find(x => x.id === id) || SABERES_CENAS[0];
+  const palco = document.getElementById('saberCena');
+  const leg = document.getElementById('saberLegenda');
+  if (!palco || !leg) return;
+  document.querySelectorAll('#saberesOpcoes button').forEach(b => b.classList.toggle('ativo', b.getAttribute('data-id')===cena.id));
+  const avBase = `<img class="saber-avatar" src="${avatarCenaSrc()}" alt="Avatar">`;
+  let extra = '';
+  let nota = '';
+  if (cena.id === 'pedagua') {
+    nota = 'Pé d’água / Toró';
+    extra = `
+      <div class="saber-el" style="top:2px; left:14px; font-size:74px; filter:drop-shadow(0 2px 2px rgba(0,0,0,.3));">☁️</div>
+      <div class="saber-el nuvem" style="top:28px; left:22px; transform:scale(1.08);"></div>
+      <div class="saber-el" style="top:104px; left:14px; font-size:12px; background:rgba(255,255,255,.9); padding:4px 7px; border-radius:8px; font-weight:700; color:#1b4f72; z-index:4;">Nuvem escura</div>
+      ${Array.from({length:18}).map((_,i)=>`<div class="saber-el gota anim-cair" style="top:${88 + (i%5)*10}px; left:${30 + i*19}px; animation-delay:${(i%7)*0.1}s; height:${12+(i%3)*5}px;"></div>`).join('')}
+    `;
+  } else if (cena.id === 'manga') {
+    nota = 'Chuva de manga';
+    extra = `
+      <div class="saber-el" style="top:30px; left:6px; font-size:90px;">🌳</div>
+      <div class="saber-el" style="top:54px; left:54px; font-size:32px;">🥭</div>
+      <div class="saber-el" style="top:6px; right:14px; font-size:58px; opacity:.95;">🌦️</div>
+      ${Array.from({length:12}).map((_,i)=>`<div class="saber-el gota anim-cair" style="top:${80 + (i%4)*13}px; right:${22 + i*15}px; animation-delay:${(i%6)*0.12}s; opacity:.55; height:8px;"></div>`).join('')}
+    `;
+  } else if (cena.id === 'trovao') {
+    nota = 'Chuva de trovão';
+    extra = `
+      <div class="saber-el" style="top:0px; left:78px; font-size:78px;">🌩️</div>
+      <div class="saber-el nuvem" style="top:24px; left:86px; transform:scale(1.12);"></div>
+      <div class="saber-el raio" style="top:76px; left:148px;"></div>
+      <div class="saber-el raio" style="top:98px; right:66px; transform:scale(.85) skewX(-10deg);"></div>
+      <div class="saber-el" style="bottom:42px; right:50px; font-size:30px; z-index:4;">⚡</div>
+      <div class="saber-el" style="top:124px; left:96px; font-size:12px; background:rgba(255,255,255,.9); padding:4px 7px; border-radius:8px; font-weight:700; color:#1b4f72; z-index:4;">Raios na nuvem</div>
+    `;
+  } else if (cena.id === 'cupim') {
+    nota = 'Sinal observado';
+    extra = `
+      ${Array.from({length:12}).map((_,i)=>`<div class="saber-el anim-voar" style="top:${30 + (i%4)*24}px; left:${18 + i*28}px; animation-delay:${(i%6)*0.16}s; font-size:${22 + (i%3)*3}px;">🐜</div>`).join('')}
+      <div class="saber-el" style="top:10px; left:10px; font-size:14px; background:rgba(255,255,255,.92); padding:5px 8px; border-radius:8px; font-weight:800; color:#1b4f72; z-index:4;">🪲 Cupins voando</div>
+    `;
+  } else if (cena.id === 'sapo') {
+    nota = 'Sinal observado';
+    extra = `
+      <div class="saber-el" style="bottom:14px; left:28px; font-size:62px; z-index:4;">🐸</div>
+      <div class="saber-el" style="bottom:8px; left:96px; font-size:13px; background:rgba(255,255,255,.92); padding:4px 8px; border-radius:8px; font-weight:800; color:#1b4f72; z-index:4;">Sapo cantando</div>
+      <div class="saber-el" style="bottom:66px; left:92px; font-size:22px;">🎵</div>
+      <div class="saber-el" style="top:10px; left:30px; font-size:54px; opacity:.9;">☁️</div>
+    `;
+  } else if (cena.id === 'lua') {
+    nota = 'Sinal observado';
+    extra = `
+      <div class="saber-el halo" style="top:12px; right:20px; width:126px; height:126px; border-width:5px;"></div>
+      <div class="saber-el lua" style="top:32px; right:40px; width:86px; height:86px;"></div>
+      <div class="saber-el" style="top:44px; right:54px; font-size:56px; filter:drop-shadow(0 0 4px rgba(255,255,255,.5));">🌙</div>
+      <div class="saber-el" style="top:146px; right:14px; font-size:13px; background:rgba(255,255,255,.92); padding:5px 8px; border-radius:8px; font-weight:800; color:#1b4f72; z-index:4;">Lua com círculo</div>
+    `;
+  }
+  const correrClass = (cena.id === 'trovao') ? 'anim-correr' : '';
+  palco.innerHTML = `<div class="nota-cena">${nota}</div>` + extra + avBase.replace('class="saber-avatar"', `class="saber-avatar ${correrClass}"`);
+  leg.textContent = cena.legenda;
+}
+
+// atualizar cena quando avatar/estação mudar
+const _aplicarAvatarOrig = aplicarAvatar;
+
+
+const _aplicarAvatarBase = aplicarAvatar;
+aplicarAvatar = function(idx){
+  _aplicarAvatarBase(idx);
+  try { const avs=document.getElementById('avatarSaberAponta'); if(avs) avs.src = (typeof avatarAtualSrc==='function'?avatarAtualSrc():(AVATARES_PNG[idx]||AVATARES[idx])); } catch(e) {}
+  try { const ativo = document.querySelector('#saberesOpcoes button.ativo'); if (ativo) mostrarCenaSaber(ativo.getAttribute('data-id')); } catch(e) {}
+};
+
+try { if (localStorage.getItem('alertasClimaAtivos') === '1') { alertasAtivos = true; } } catch(e) {}
+
+prepararAvatares().then(function(){ aplicarAvatar(1); });
+main();
+setTimeout(function(){ if(alertasAtivos){ var b=document.getElementById('btnAlertas'); if(b){b.textContent='Alertas de extremos ativados'; b.className='alerta-btn alerta-btn-on';} var s=document.getElementById('alertaStatus'); if(s){s.textContent='Ativo: compara com o mesmo mês (1981–2025).';} } }, 500);
+
+// ============================================================
+//  PWA - INSTALACAO DO APP + SERVICE WORKER
+// ============================================================
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const b = document.getElementById('btnInstalar');
+  if (b) b.style.display = 'block';
+});
+
+function instalarApp() {
+  if (!deferredPrompt) {
+    alert('Para instalar no celular:\n\nANDROID: toque no menu do Chrome (⋮) e escolha "Adicionar à tela inicial".\n\nIPHONE: toque no botão Compartilhar (□↑) e escolha "Adicionar à Tela de Início".');
+    return;
+  }
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(() => {
+    deferredPrompt = null;
+    const b = document.getElementById('btnInstalar');
+    if (b) b.style.display = 'none';
+  });
+}
+
+// aviso para iPhone (nao suporta beforeinstallprompt)
+if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+  document.addEventListener('DOMContentLoaded', () => {
+    const b = document.getElementById('btnInstalar');
+    if (b) b.style.display = 'block';
+  });
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(e => console.warn('SW:', e.message));
+  });
+}
+</script>
+</body>
+</html>
